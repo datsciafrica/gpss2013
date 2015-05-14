@@ -1,0 +1,383 @@
+\documentclass{article}
+
+\usepackage[top=4cm,left=4cm,right=4cm]{geometry}
+\usepackage[usenames]{color}
+\usepackage[sc]{mathpazo}
+\linespread{1.1}         
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{upquote}
+\usepackage{setspace}
+\usepackage{minted}
+\usepackage{listings}
+\usepackage{subcaption}
+\usepackage{dsfont}
+\usepackage{url}
+
+\linespread{1.1}         % Palatino needs more leading, space between lines
+\setlength\parindent{0pt}
+
+\definecolor{MyDarkBlue}{rgb}{0,0.08,0.45}
+\definecolor{bg}{rgb}{0.98,0.97,0.92}
+\usemintedstyle{trac}
+
+% inline code
+%\newcommand{\mintinline}[1]{\colorbox{bg}{\tt #1}}
+\newcommand{\mintinline}[1]{\colorbox{bg}{\lstinline[basicstyle=\ttfamily]{#1}}}
+
+\begin{document}
+
+\begin{center}
+\textcolor{MyDarkBlue}{
+{\LARGE Lab session 1: Gaussian Process models with GPy\\}
+\vspace*{.5cm}
+{\large GP Summer School -- Kampala, 6-9th of August 2013}
+}
+\end{center}
+\vspace*{1cm}
+
+\paragraph{}
+The aim of this lab session is to illustrate the concepts seen during the lectures. We will focus on three aspects of GPs: the kernel, the random sample paths and the GP regression model. 
+
+\paragraph{}
+Since the background of the attendees is very diverse, this session will attempt to cover a large spectrum from the very basic of GPs to more technical questions. This in mind, the difficulty of the questions has been ranked from $\star$ (easy) to $\star \star \star$ (difficult). Feel free to skip the parts that are either too easy or too technical.
+
+\section{Getting started: the covariance function}
+\paragraph{}
+We first open \textit{ipython} and import the libraries we will need: \\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+import numpy as np
+import pylab as pb
+import GPy
+
+pb.ion()                     # Open one thread per plot
+\end{minted}
+
+\paragraph{}
+The online documentation of GPy is available from the SheffieldML github page:
+\url{https://github.com/SheffieldML/GPy}.
+
+\paragraph{}
+Lets start with defining a squared-exponential kernel (ie rbf or Gaussian) in one dimension: \\ \ \\
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+d = 1                        # input dimension
+var = 1.                     # variance
+theta = 0.2                  # lengthscale
+
+k = GPy.kern.rbf(d,var,theta)
+\end{minted}
+
+\paragraph{}
+A summary of the kernel can be obtained using the command \mintinline{print k}. It is also possible to plot the kernel as a function of one of its inputs (whilst fixing the other) with \mintinline{k.plot()}.
+
+\paragraph{}
+The value of the kernel parameters can be accessed and modified using
+\mintinline{k[".*var"]} where the string in square brackets is a regular
+expression matching the parameter name as it appears in \mintinline{print k}. To
+get an insight on the effect of the parameters their shape, try: \\ \ \\
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+k = GPy.kern.rbf(d)          # By default, the parameters are set to 1.
+
+theta = np.asarray([0.2,0.5,1.,2.,4.])
+for t in theta:
+    k[".*lengthscale"]=t 
+    k.plot()
+
+pb.legend(theta)
+\end{minted}
+
+\paragraph{Question 1}
+\begin{itemize}
+	\item[$\star$] What is the effect of the lengthscale parameter?
+	\item[$\star$] Similarly, change the previous bit of code to see the influence of the variance parameter.
+\end{itemize}
+\paragraph{}
+Many kernels are already implemented in GPy. Instead of \mintinline{rbf}, try plotting the following ones \mintinline{exponential}, \mintinline{Matern32}, \mintinline{Matern52}, \mintinline{Brownian}, \mintinline{linear}, \mintinline{bias}, \mintinline{rbfcos}, \mintinline{periodic\_matern32}, etc... Some of these kernels, such as \textit{rbfcos}, are not parametrized by a variance and a lengthscale. Furthermore, not all kernels are stationary (ie they can't all be written as $k(x,y) = f(x-y)$, see for example the \textit{Brownian kernel}) so it may be interesting to change the value of the fixed input: \\ \ \\
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+kb = GPy.kern.Brownian(input_dim=1)
+kb.plot(x = 2.,plot_limits=[0,5])
+kb.plot(x = 4.,plot_limits=[0,5],ls="--",color="r")
+pb.ylim([-0.1,5.1])
+\end{minted}
+
+\paragraph{}
+Let $X$ be a $n \times d$ numpy array. Given a kernel $k$, the covariance matrix associated to $X$ is obtained with \mintinline{C = k.K(X,X)}. The positive semi-definiteness of $k$ ensures that $C$ is a positive semi-definite (psd) matrix regardless of the initial points $X$. This can be checked numerically by looking at the eigenvalues: \\ \ \\
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+k = GPy.kern.Matern52(input_dim=2)
+X = np.random.rand(50,2)     # 50*2 matrix of iid uniform
+C = k.K(X,X)                 
+np.linalg.eigvals(C)         # Computes the eigenvalues of a matrix
+\end{minted}
+
+\paragraph{Question 2}
+\begin{itemize}
+	\item[$\star \star$] Is the sum of two psd matrices also psd?
+	\item[$\star \star \star$] Show that the product of 2 kernels is also a valid covariance structure.
+\end{itemize}
+
+\paragraph{}
+In GPy, the sum and the product of kernels can be achieved using the usual $+$ and $\times$ operators. For example, we can define two new kernels as \mintinline{ksum = k + kb} and \mintinline{kprod = k * kb}.
+
+\section{Sample paths from a GP}
+\paragraph{}
+A psd-matrix can be seen as the covariance of a Gaussian vector. For example, we
+can simulate sample paths from a GP as follows: \\ \ \\
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+k = GPy.kern.rbf(input_dim=1,lengthscale=0.2)
+
+X = np.linspace(0.,1.,500)   # 500 points evenly spaced over [0,1]
+X = X[:,None]                # reshape X to make it n*D
+
+mu = np.zeros((500))         # vector of the means
+C = k.K(X,X)                 # covariance matrix
+
+# Generate 20 sample path with mean mu and covariance C
+Z = np.random.multivariate_normal(mu,C,20)
+
+pb.figure()                  # open new plotting window
+for i in range(20):
+    pb.plot(X[:],Z[i,:])
+\end{minted}
+
+\paragraph{Question 3}
+\begin{itemize}
+	\item[$\star$] Investigate the influence of the choice of the kernel (and its parameters) on the sample paths.
+	\item[$\star \star$] Can you tell the covariance structures that have been used for generating the sample paths shown in Figure~\ref{fig:paths}? 
+\end{itemize}
+
+\begin{figure}
+	\begin{center}
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/exp}
+                \caption{}
+        \end{subfigure}%
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/bias}
+                \caption{}
+        \end{subfigure}%
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/cos}
+                \caption{}
+        \end{subfigure}%
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/Mat32}
+                \caption{}
+        \end{subfigure} \\ \ \\
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/Mat52}
+                \caption{}
+        \end{subfigure}%
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/Brown}
+                \caption{}
+        \end{subfigure}%
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/noise}
+                \caption{}
+        \end{subfigure}%
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/rbf}
+                \caption{}
+        \end{subfigure}
+    \end{center}
+    \caption{Examples of sample paths from centred GPs with various kernels.}
+	\label{fig:paths}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{GP regression model}
+\paragraph{}
+We will now see how to create a GP regression model with GPy. We consider the
+toy function $f(x) = -\cos(\pi x) + \sin(4 \pi x)$ over $[0,1]$ and we assume we
+have the following observations (note that the observations $Y$ usually include
+some noise):\\ \ \\
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+X = np.linspace(0.05,0.95,10)[:,None]
+Y = -np.cos(np.pi*X) +np.sin(4*np.pi*X) + np.random.randn(10,1)*0.2
+pb.figure()
+pb.plot(X,Y,"kx",mew=1.5)
+\end{minted}
+\begin{figure}[ht]
+    \begin{center}
+        \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/testfunc_1D}
+                \caption{test function}
+        \end{subfigure}%
+        \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/testfunc_1D_DOE}
+                \caption{Observations}
+        \end{subfigure}%
+    \end{center}
+    \caption{test function and training set.}
+    \label{fig:testfunc_1D}
+\end{figure}
+
+\paragraph{}
+A GP regression model based on an squared-exponential kernel can be defined as
+follows: \\ \ \\
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+k = GPy.kern.rbf(input_dim=1, variance=1., lengthscale=.2)
+m = GPy.models.GPRegression(X,Y,k)
+\end{minted}
+
+As previously, the commands \mintinline{print m} and \mintinline{m.plot()} are available to obtain a summary of the model. Note that by default the model includes some observation noise with variance 1. Furthermore, the predictions of the model for a new set of points $Xp$ (a $m \times D$ array) can be computed using \mintinline{Yp, Vp, up95, lo95 = m.predict(Xp)}.
+
+\paragraph{Question 4}
+\begin{itemize}
+ \item[$\star$] What do you think about this first fit? Does the prior given by the GP seem to be adapted?
+ \item[$\star$] The parameters of the models can be modified using a regular expression matching the parameters names (for example \mintinline{m["noise"] = 0.001}). Change the values of the parameters to obtain a better fit.
+ \item[$\star$] What difference does it make in the fit to have a noise equal to zero?.
+\end{itemize}
+
+\paragraph{}
+As in Section 2, random sample paths from the conditional GP can be obtained using \mintinline{np.random.multivariate_normal(mu[:,0],C)} where the mean vector and covariance matrix $mu$, $C$ are given by \mintinline{mu, C, up95, lo95 = m.predict(Xp,full_cov=True)}.
+
+\paragraph{}
+As we have seen during the lectures, the parameters values can be estimated by
+maximizing the likelihood of the observations. Since we don't want one of the
+variances to become negative during the optimization, we first need to constrain
+all parameters to be positive before running the optimisation. We will assume first a free
+noise model. We can define such a model by fixing the noise term to be zero:\\ \ \\
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+m.constrain_positive("")     # "" is a regex matching all parameter names
+m.constrain_fixed("noise",0)
+\end{minted}
+
+\paragraph{}
+Now we can optimize the model:\\ \ \\
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+m.optimize()
+m.plot()
+\end{minted}
+
+\paragraph{}
+To include noise in the model, we will constrain the noise as positive.
+Before optimizing again, we will randomize the initial parameter values.
+It might also be helpful to set a small initial value for the noise:\\ \ \\
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+m.constrain_positive("noise")
+m.randomize()
+m["noise"] = .01
+m.optimize()
+m.plot()
+\end{minted}
+\paragraph{}
+The parameters obtained after optimisation can be compared with the values obtained by hand. As perviously, you can modify the kernel used for building the model to investigate its influence on the model.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Uncertainty propagation}
+\paragraph{}
+Let $X$ be a random variable defined over $\mathds{R}$ and $f$ be a function $\mathds{R} \rightarrow \mathds{R}$. Uncertainty propagation is the study of the distribution of the random variable $f(X)$. 
+
+\paragraph{}
+We will see in this section the advantage of using a model when only a few observations of $f$ are available. We consider here the 2-dimensional Branin test function defined over $[-5,10]\times[0,15]$ and a set of 25 observations as seen in Figure~\ref{fig:branin}. \\ \ \\
+
+\begin{figure}[ht]
+    \begin{center}
+        \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/branin}
+                \caption{Branin function}
+        \end{subfigure}%
+        \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{Figures/DoE}
+                \caption{Observations}
+        \end{subfigure}%
+    \end{center}
+    \caption{Branin test function and training set.}
+    \label{fig:branin}
+\end{figure}
+
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+# Definition of the Branin test function
+def branin(X):
+    y = (X[:,1]-5.1/(4*np.pi**2)*X[:,0]**2+5*X[:,0]/np.pi-6)**2
+    y += 10*(1-1/(8*np.pi))*np.cos(X[:,0])+10
+    return(y)
+
+# Training set defined as a 5*5 grid:
+xg1 = np.linspace(-5,10,5)
+xg2 = np.linspace(0,15,5)
+
+X = np.zeros((xg1.size * xg2.size,2))
+for i,x1 in enumerate(xg1):
+    for j,x2 in enumerate(xg2):
+        X[i+xg1.size*j,:] = [x1,x2]
+
+Y = branin(X)[:,None]
+\end{minted}
+
+\paragraph{}
+We assume here that we are interested in the distribution of $f(U)$ where $U$ is a random variable with uniform distribution over the input space of $f$. We will focus on the computation of two quantities: $\mathrm{E}[f(U)]$ and $\mathrm{P}(f(U)>200)$.
+
+\subsection{Computation of $\mathrm{E}[f(U)]$}
+The expectation of $f(U)$ is given by $\int f(x) \mathrm{d}x$. A basic approach to approximate this integral is to compute the mean of the 25 observations: $\mintinline{np.mean(Y)}$. Since the points are distributed on a grid, this can be seen as the approximation of the integral by a rough Riemann sum. The result can be compared with the actual mean of the Branin function which is $54.31$.
+
+\paragraph{}
+Alternatively, we can fit a GP model and compute the integral of the best predictor by Monte Carlo sampling:\\ \ \\
+\begin{minted}[bgcolor=bg,fontfamily=tt]{python}
+# Fit a GP
+kg = GPy.kern.rbf(input_dim=2, ARD = True) 
+kb = GPy.kern.bias(input_dim=2)
+
+k = kg + kb
+k.plot()
+
+m = GPy.models.GPRegression(X,Y,k,normalize_Y=True)
+m.constrain_bounded("rbf_var",1e-3,1e5)
+m.constrain_bounded("bias_var",1e-3,1e5)
+m.constrain_bounded("rbf_len",.1,200.)
+m.constrain_fixed("noise",1e-5)
+
+m.randomize()
+m.optimize()
+
+m.plot()
+
+# Compute the mean of model prediction on 1e5 Monte Carlo samples
+Xp = np.random.uniform(size=(1e5,2))
+Xp[:,0] = Xp[:,0]*15-5
+Xp[:,1] = Xp[:,1]*15
+Yp = m.predict(Xp)[0]
+np.mean(Yp)
+\end{minted}
+
+\paragraph{Question 5}
+\begin{itemize}
+ \item[$\star$] Has the approximation of the mean been improved by using the GP model?
+ \item[$\star \star \star$] One particular feature of GPs we have not use for now is their prediction variance. Can you use it to define some confidence intervals around the previous result?
+\end{itemize}
+
+\subsection{Computation of $\mathrm{P}(f(U)>200)$}
+In various cases it is interesting to look at the probability that $f$ is greater than a given threshold. For example, assume that $f$ is the response of a physical model representing the maximum constraint in a structure depending on some parameters of the system such as Young's modulus of the material (say $Y$) and the force applied on the structure (say $F$). If the later are uncertain, the probability of failure of the structure is given by $\mathrm{P}(f(Y,F)>f_{max})$ where $f_{max}$ is the maximum acceptable constraint.
+
+\paragraph{Question 6}
+\begin{itemize}
+ \item[$\star$] As previously, use the 25 observations to compute a rough estimate of the probability that $f(U)>200$.
+ \item[$\star$] Compute the probability that the best predictor is greater than the threshold.
+ \item[$\star \star$] Compute some confidence intervals for the previous result
+\end{itemize}
+These two values can be compared with the actual value $\mathrm{P}(f(U)>200) = 1.23\ 10^{-2}$.
+
+\paragraph{}
+We now assume that we have an extra budget of 10 evaluations of $f$ and we want to use these new evaluations to improve the accuracy of the previous result.
+\paragraph{Question 7}
+\begin{itemize}
+ \item[$\star$] Given the previous GP model, where is it interesting to add the new observations if we want to improve the accuracy of the estimator and reduce its variance?
+ \item[$\star \star \star$] Can you think about (and implement!) a procedure that updates sequentially the model with new points in order to improve the estimation of $\mathrm{P}(f(U)>200)$?
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,232 @@
+\documentclass{article}
+
+\usepackage[top=4cm,left=4cm,right=4cm]{geometry}
+\usepackage[usenames]{color}
+\usepackage[sc]{mathpazo}
+\linespread{1.1}         
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{upquote}
+\usepackage{setspace}
+\usepackage{minted}
+\usepackage{listings}
+\usepackage{subcaption}
+\usepackage{dsfont}
+
+\linespread{1.1}         % Palatino needs more leading, space between lines
+\setlength\parindent{0pt}
+
+\definecolor{MyDarkBlue}{rgb}{0,0.08,0.45}
+\definecolor{bg}{rgb}{0.98,0.97,0.92}
+\usemintedstyle{trac}
+
+% inline code
+%\newcommand{\mintinline}[1]{\colorbox{bg}{\tt #1}}
+\newcommand{\mintinline}[1]{\colorbox{bg}{\lstinline[basicstyle=\ttfamily]{#1}}}
+
+\begin{document}
+
+\begin{center}
+\textcolor{MyDarkBlue}{
+	{\LARGE Lab session 2: Sparse GPs and likelihood approximation}\\
+\vspace*{.5cm}
+{\large GP Summer School -- Kampala, 6-9th of June 2013}
+}
+\end{center}
+\vspace*{1cm}
+
+\paragraph{}
+The aim of this lab is to explore the sparse GP formulation developed in the lectures. We'll also play with a classification problem using Expectation Propagation (EP). 
+
+\section{Getting started}
+\paragraph{}
+Recall the simple set up we saw before:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+import numpy as np
+import pylab as pb
+import GPy
+
+pb.ion()
+\end{minted}
+
+\paragraph{}
+Create a simple data set by sampling from a GP:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+X = np.sort(np.random.rand(50,1)*12)
+k = GPy.kern.rbf(1)
+K = k.K(X)
+K+= np.eye(50)*0.01 # add some independence (noise) to K
+y = np.random.multivariate_normal(np.zeros(50), K).reshape(50,1)
+\end{minted}
+
+\paragraph{}
+Build a straightforward GP model of our simulation. We'll also plot the
+posterior of $\mathbf f$:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+m = GPy.models.GPRegression(X,y)
+m.ensure_default_constraints()
+m.optimize()
+m.plot()
+mu, var = m._raw_predict(X) # this fetches the posterior of f
+pb.vlines(X[:,0], (mu-2*np.sqrt(var))[:,0], (mu+2*np.sqrt(var))[:,0],"r")
+\end{minted}
+
+\paragraph{}
+Would you describe the information in the posterior as redundant? What happens
+to the model if you remove some data? Try:\\ \ \\
+%\mintinline{GPy.models.GPRegression(np.delete(X,[0,1,2],0), np.delete(y,[0,1,2],0))}
+\begin{minted}[bgcolor=bg]{python}
+GPy.models.GPRegression(np.delete(X,[0,1,2],0), np.delete(y,[0,1,2],0))
+\end{minted}
+%\clearpage
+
+\section{Build a sparse GP model}
+\paragraph{}
+Now we'll build a sparse GP model:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+Z = np.random.rand(3,1)*12
+m = GPy.models.SparseGPRegression(X,y,Z=Z)
+m.ensure_default_constraints()
+print m
+\end{minted}
+
+\paragraph{}
+In GPy, the sparse inputs $\mathbf Z$ are abbreviated \mintinline{"iip"}, for {\em inducing input}. 
+Plot the posterior of $\mathbf u$ in the same manner as for the full GP:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+mu, var = m._raw_predict(Z) 
+pb.vlines(Z[:,0], (mu-2*np.sqrt(var))[:,0], (mu+2*np.sqrt(var))[:,0],"r")
+\end{minted}
+
+\paragraph{Question 1a}
+Optimise and plot the model. The inducing inputs are marked -- how are they placed? You can moved them around with e.g. \mintinline{m["iip_2_0"] = 100}. What happens to the likelihood? What happens to the fit if you remove an input?
+
+\paragraph{Question 1b}
+How does the fit of the sparse compare with the full GP? Play around with the number of inducing inputs, the fit should improve as $M$ increases. How many inducing points are needed? What do you think happens in higher dimensions?
+
+\section{Classification}
+\paragraph{}
+We'll construct a toy data set to play with:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+X = np.random.rand(100,2)
+y = np.where(X[:,1:]>0.5*(np.sin(X[:,:1]*4*np.pi)+0.5),1,0)
+X[:,1:] += y*0.1  # make the boundary well behaved
+m = GPy.models.GPClassification(X,y)
+m.randomize()
+m.update_likelihood_approximation()
+m.plot()
+\end{minted}
+
+\paragraph{}
+The decision boundary should be quite poor!  
+
+\paragraph{}
+To optimize the model, we'll
+alternate between optimizing the hyper-parameters:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+m.ensure_default_constraints()
+m.optimize("bfgs") #your preferred optimizer here
+\end{minted}
+
+and re-approximating the likelihood using EP:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+m.update_likelihood_approximation()
+\end{minted}
+
+\paragraph{Question 2}
+Write a for loop to optimize the model by iterating between EP and optimisation of the parameters. You may have to restart the EP algorithm occasionally (\mintinline{m.likelihood.restart()})
+
+
+\section{Sparse GP Classification}
+
+\paragraph{}
+Here we'll build a super-simple application to classify images. The two class
+labels correspond to whether the subject of the image is wearing glasses.
+
+\paragraph{}
+Set up the ipython environment and download the data:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+import urllib
+from scipy import io
+
+urllib.urlretrieve("http://www.cs.nyu.edu/~roweis/data/\
+    olivettifaces.mat", "faces.mat")
+face_data = io.loadmat("faces.mat")
+\end{minted}
+
+\paragraph{}
+Here's a simple way to visualise the data. Each pixel in the image will become
+an input to the GP:\\ \ \\ 
+\begin{minted}[bgcolor=bg]{python}
+faces = face_data["faces"].T
+pb.imshow(faces[120].reshape(64,64,order="F"), interpolation="nearest",
+    cmap=pb.cm.gray)
+\end{minted}
+
+\paragraph{}
+Now fetch the class labels:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+urllib.urlretrieve("http://staffwww.dcs.sheffield.ac.uk/people/\
+    J.Hensman/gpsummer/datasets/has_glasses.np", "has_glasses.np")
+
+y = np.load("has_glasses.np")
+y = np.where(y=="y",1,0).reshape(-1,1)
+\end{minted}
+
+\paragraph{}
+Divide the data into a training/testing set:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+index = np.random.permutation(faces.shape[0])
+num_training = 200
+Xtrain = faces[index[:num_training],:]
+Xtest = faces[index[num_training:],:]
+ytrain = y[index[:num_training],:]
+ytest = y[index[num_training:]]
+\end{minted}
+
+\paragraph{}
+Choose some inducing inputs. Is this a good scheme for choosing them? Can you
+devise a better one?\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+from scipy import cluster
+M = 8
+Z, distortion = cluster.vq.kmeans(Xtrain,M)
+\end{minted}
+
+\paragraph{}
+Finally, we're ready to build the classifier object.\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+k = GPy.kern.rbf(4096,lengthscale=50) + GPy.kern.white(4096,0.001)
+m = GPy.models.SparseGPClassification(Xtrain, ytrain, kernel=k, Z=Z, 
+  normalize_X=True)
+m.update_likelihood_approximation()
+m.ensure_default_constraints()
+\end{minted}
+
+\paragraph{Question 3a}
+Look at the following figure. What is being shown? Why does it look like this?\\
+\ \\
+\begin{minted}[bgcolor=bg]{python}
+pb.figure()
+pb.imshow(m.dL_dZ()[0].reshape(64,64,order="F"),interpolation="nearest",
+    cmap=pb.cm.gray)
+\end{minted}
+
+\paragraph{Question 3b}
+Write some code to evaluate the model's performance, using the held-out data that we separated earlier. How is the error rate? Is that better than random guessing?
+
+\paragraph{Question 3c}
+Write another simple for loop to optimize the model. How low can you get the error rate to go? Hint: this author can get less than 10\% errors.
+
+How could you make the model better? What kind of kernel do you think might be appropriate for this classification task?
+
+
+
+
+
+
+
+
+
+\end{document}
+

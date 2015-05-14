@@ -1,0 +1,225 @@
+\documentclass{article}
+
+\usepackage[top=4cm,left=4cm,right=4cm]{geometry}
+\usepackage[usenames]{color}
+\usepackage[sc]{mathpazo}
+\linespread{1.1}         
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{upquote}
+\usepackage{setspace}
+\usepackage{minted}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{dsfont}
+\usepackage{url}
+
+\linespread{1.1}         % Palatino needs more leading, space between lines
+\setlength\parindent{0pt}
+
+\definecolor{MyDarkBlue}{rgb}{0,0.08,0.45}
+\definecolor{bg}{rgb}{0.98,0.97,0.92}
+\usemintedstyle{trac}
+
+% inline code
+%\newcommand{\mintinline}[1]{\colorbox{bg}{\tt #1}}
+\newcommand{\mintinline}[1]{\colorbox{bg}{\lstinline[basicstyle=\ttfamily]{#1}}}
+
+
+\input{../../../../definitions}
+\input{../../../../notationDef}
+
+\begin{document}
+
+\begin{center}
+\textcolor{MyDarkBlue}{
+{\LARGE Lab session 0: Introduction to Python\\}
+\vspace*{.5cm}
+{\large GP Summer School---Kampala, 6--9th of August 2013}
+}
+\end{center}
+\vspace*{1cm}
+
+The aim of this lab session is to get you familiar with coding in
+Python.  We will illustrate how to execute some useful tasks in Python
+by solving a linear regression problem. Please follow the installation
+instructions from the outline document, in case your computer does not
+have Python 2.7 and GPy already installed.
+
+
+ We first open \textit{ipython} and import the libraries we will need: \\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+import numpy as np
+import pylab as pb
+
+pb.ion()                     # Open one thread per plot
+\end{minted}
+
+
+Remember to check what a command does, simply type: \\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+np.random.randn?
+\end{minted}
+
+
+\section{Linear regression: iterative solution}
+
+
+For this part we are going to load in some real data, we will use an example from the Olumpics: the pace of Marathon winners. To load
+their data (which is in comma separated values (csv) format) we need to 
+ download it from:
+\url{http://staffwww.dcs.shef.ac.uk/people/N.Lawrence/olympicMarathonTimes.csv}, and load it
+as follows:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+olympics = np.genfromtxt('olympicMarathonTimes.csv', delimiter=',')
+\end{minted}
+
+This loads the data into a Python array
+
+You can extract the Olympic years and the pace of the winner, respectively, as:
+\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+x = olympics[:, 0:1]
+y = olympics[:, 1:2]
+\end{minted}
+
+
+You can see what the values are by typing: \\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+print(x)
+print(y)
+\end{minted}
+
+
+You can make a plot of $\dataScalar$ vs $\inputScalar$ with the following command:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+pb.plot(x, y, "rx")
+\end{minted}
+\begin{figure}[ht]
+    \begin{center}
+        %\centering
+        \includegraphics[width=\textwidth]{Figures/olympicMarathonData}
+        \caption{Olympic Marathon Winners' Times.}
+        \label{fig:olympics}
+    \end{center}
+\end{figure}
+
+
+Now we are going to fit a line, $\dataScalar_i = m\inputScalar_i + c$, to the data you've plotted
+. We are trying to minimize this error:
+\[
+\errorFunction(m,c,\dataStd ^{2})=\frac{\numData}{2}\log \dataStd^2 +\frac{1}{2\dataStd^2}\sum _{i=1}^{\numData}\left(\dataScalar_i-m\inputScalar_i-c\right)^{2},
+\]
+with respect to $m$, $c$ and $\dataStd^2$. We need to start with an initial
+guess for $m$, the actual value doesn't matter too much, try setting it to zero,
+then use this formula to set $c$:
+\[
+c^{*}=\frac{\sum
+_{i=1}^{\numData}\left(\dataScalar_i-m^{*}\inputScalar_i\right)}{\numData},
+\]
+followed by this formula to estimate $m$: 
+\[
+m^{*}=\frac{\sum
+_{i=1}^{\numData}\inputScalar_i\left(\dataScalar_i-c^{*}\right)}{\sum
+_{i=1}^{\numData}\inputScalar_i^{2}}.
+\]
+
+
+Iterate between the two formulae and compute the error after each iteration and
+see how much it changes. Finally when the error stops changing update the
+estimate of the noise variance:
+\[
+\left.\dataStd^2\right.^{*}=\frac{\sum
+_{i=1}^{\numData}\left(\dataScalar_i-m^{*}\inputScalar_i-c^{*}\right)^{2}}{\numData}.
+\]
+Print the final recorded values for the error, $m$, $c$ and
+$\dataStd^2$. Plot the error as a function of iterations. Ensure it
+goes down at each iteration.
+
+
+You can add the line fitted to the figure you created earlier. To do this, we
+will create some 'test' data uniformly spaced along the $x$-axis. For example,
+you can create a set of values between two points with the command
+\mintinline{np.linspace}:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+xTest = np.linspace(1890,2010,100)
+pb.plot(xTest,m*xTest + c,"b-")
+\end{minted}
+
+\paragraph{Question 1a}
+The error function used above assumes the following model $\dataScalar_i=m\inputScalar_i + c_i + \epsilon_i$, where $\epsilon_i$ corresponds to the observed noise. What is a
+sensible assumption about the noise's probability density?
+
+\paragraph{Question 1b}
+What are the mean and standard deviation of the observed noise?
+
+\paragraph{Question 1c}
+Can you write down the probability density for $\bf \dataVector$?
+
+\section{Basis functions}
+
+We don't need to run the iterative algorithm. Since there was a gradient and an
+offset, we will use the 'trick' of having a basis set containing the
+data and another basis set containing the 'constant function'
+(i.e. set to 1).\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+Phi = np.hstack((np.ones(x.shape), x))
+print(Phi)
+\end{minted}
+
+
+We can use this basis set to learn $m$ and $c$ simultaneously. 
+The maximum likelihood solution for $\mappingVector$ is:
+\[
+\mappingVector^* = \left[\basisMatrix^{\top}\basisMatrix\right]^{-1}
+\basisMatrix^\top \dataVector,
+\]
+but you should solve the matrix equation:
+\[
+\basisMatrix^{\top}\basisMatrix \mappingVector = \basisMatrix^\top \dataVector
+\]
+directly to get the best solution (Hint: try \mintinline{np.linalg.solve?}) and
+call the resulting variable \mintinline{wStar}. Implement this update and show
+that $\mappingScalar^*_1$ (the first element of $\mappingVector^*$) is equal to
+$c$ and $\mappingScalar^*_2$ is equal to $m$.
+
+Create some `test' data, as before, and create an associated feature matrix to
+add the bias term:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+PhiTest = np.zeros((xTest.shape[0], 2))
+PhiTest[:, 0] = np.ones(xTest.shape)
+PhiTest[:, 1] = xTest
+\end{minted}
+
+To obtain and plot the test outputs you can write:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+yTest = np.dot(PhiTest, wStar)
+pb.plot(xTest, yTest, "b-")
+\end{minted}
+
+
+Now we will fit a non-linear basis function model. Start by creating a quadratic
+basis:\\ \ \\
+\begin{minted}[bgcolor=bg]{python}
+Phi = np.zeros((x.shape[0], 3))
+for i in range(0, 3):
+    Phi[:, i] = x.T**i
+\end{minted}
+
+
+\paragraph{Question 2a}
+Plot the fit and compute the final error using the non-linear basis
+function.
+
+\paragraph{Question 2b}
+Large order polynomial fits tend to do fairly extraordinary things
+outside an input range of 1896 to 2008. Have a think about why this
+is, in particular, what is the result of $2012^8$?
+
+\paragraph{Question 2c}
+Do you think that is a suitable basis?
+
+
+
+\end{document}
