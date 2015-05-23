@@ -3,7 +3,7 @@ layout: default
 ---
 
 
-{{ site.conference.location }}<br>
+**{{ site.conference.location }}**,
 {% assign startdate = site.conference.dates | first %}
 {% assign enddate = site.conference.dates | last %}
 {% if startdate.month == enddate.month %}
@@ -11,16 +11,10 @@ layout: default
 {% else %}
 {{ startdate.date }} {{ startdate.month }} - {{ enddate.date }} {{ enddate.month }} {{ startdate.year }}
 {% endif %}
-organised by<br>
-{% for person in site.conference.organizers %}
-[{{ person.name }}]({{ person.url }})
-{% endfor %}
+{% if site.conference.hosturl %} [Hosts Local Page]({{ site.conference.hosturl }})<br>{% endif %}
+{% if site.conference.organizers %} organized by {% for person in site.conference.organizers %}[{{ person.name }}]({{ person.url }}){% if site.conference.organizers | size > 1 %}, {% endif %}{% endfor %}{% endif %}
 
-hosted by 
-{% for person in site.conference.hosts %}
-[{{ person.name }}]({{ person.url }})
-{% endfor %}
-
+{% if site.conference.hosts %}hosted by {% for person in site.conference.hosts %}[{{ person.name }}]({{ person.url }}){% if site.conference.hosts | size > 1 %}, {% endif %}{% endfor %}{% endif %}
 
 {% for date in site.conference.dates %}
 ## {{ date.day }} {{ date.date }} {{ date.month }} 
