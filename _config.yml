@@ -25,6 +25,7 @@ conference:
   location: University of Makerere, Kampala, Uganda
   month: August
   year: 2013
+  schoolphoto: gps_uganda.jpg
   dates:
   - {date: 6, day: Tuesday, month: August, year: 2013}
   - {date: 7, day: Wednesday, month: August, year: 2013}
