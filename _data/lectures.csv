@@ -1,11 +1,11 @@
 day,date,month,start,end,title,pdf,ipynb,speaker,institution,youtube
-Tuesday,6,August,9:30,10:45,**Linear Regression**,./assets/session1.pdf,,Neil Lawrence,University of Sheffield,QkXvNVMO78A
-Tuesday,6,August,11:15,12:30,**Lab Class**,./assets/lab0.pdf,http://nbviewer.ipython.org/github/gpschool/gprs13/blob/master/lab0_gprs13.ipynb,Ricardo Andrade Pacheco and Neil Lawrence,University of Sheffield,JNu_-E1NszI
-Wednesday,7,August,9:30,10:30,"**Basis Functions**",./assets/session2.pdf,,Neil Lawrence,University of Sheffield,PoNbOnUnOao
-Wednesday,7,August,10:30,11:00,**Lab Class**,./assets/lab0.pdf,lab_gprs13.ipynb,Ricardo Andrade Pacheco and Neil Lawrence,University of Sheffield,
-Wednesday,7,August,11:30,12:30,"**Model Selection and Bayesian Inference**",./assets/session2.pdf,,Neil Lawrence,University of Sheffield,RJEHuzgHl98
+Tuesday,6,August,9:30,10:45,**Linear Regression**,./assets/session1.pdf,,[Neil Lawrence](http://inverseprobability.com),University of Sheffield,QkXvNVMO78A
+Tuesday,6,August,11:15,12:30,**Lab Class**,./assets/lab0.pdf,http://nbviewer.ipython.org/github/gpschool/gprs13/blob/master/lab0_gprs13.ipynb,[Ricardo Andrade Pacheco](http://ric70x7.github.io) and [Neil Lawrence](http://inverseprobability.com),University of Sheffield,JNu_-E1NszI
+Wednesday,7,August,9:30,10:30,"**Basis Functions**",./assets/session2.pdf,,[Neil Lawrence](http://inverseprobability.com),University of Sheffield,PoNbOnUnOao
+Wednesday,7,August,10:30,11:00,**Lab Class**,./assets/lab0.pdf,lab_gprs13.ipynb,[Ricardo Andrade Pacheco](http://ric70x7.github.io) and [Neil Lawrence](http://inverseprobability.com),University of Sheffield,
+Wednesday,7,August,11:30,12:30,"**Model Selection and Bayesian Inference**",./assets/session2.pdf,,[Neil Lawrence](http://inverseprobability.com),University of Sheffield,RJEHuzgHl98
 Thursday,8,August,,,Eid Holiday,,,,,
-Friday,9,August,9:30,10:15,**Gaussian Processes I**,./assets/session3.pdf,,Neil Lawrence, University of Sheffield,BETEUTO3CPM
-Friday,9,August,10:15,11:00,**Lab Class**,./assets/lab1.pdf,http://nbviewer.ipython.org/github/gpschool/gprs13/blob/master/labs_gprs13.ipynb,Ricardo Andrade Pacheco and Neil Lawrence,University of Sheffield,
-Friday,9,August,11:30,12:30,**Gaussian Processes II**,./assets/session3.pdf,,Neil Lawrence, University of Sheffield,MqgGqEcpsQY
-Friday,9,August,14:00,,**Bring Your Own Data**,,,Neil Lawrence and Ricardo Andrade Pacheco, University of Sheffield,
+Friday,9,August,9:30,10:15,**Gaussian Processes I**,./assets/session3.pdf,,[Neil Lawrence](http://inverseprobability.com), University of Sheffield,BETEUTO3CPM
+Friday,9,August,10:15,11:00,**Lab Class**,./assets/lab1.pdf,http://nbviewer.ipython.org/github/gpschool/gprs13/blob/master/labs_gprs13.ipynb,[Ricardo Andrade Pacheco](http://ric70x7.github.io) and [Neil Lawrence](http://inverseprobability.com),University of Sheffield,
+Friday,9,August,11:30,12:30,**Gaussian Processes II**,./assets/session3.pdf,,[Neil Lawrence](http://inverseprobability.com), University of Sheffield,MqgGqEcpsQY
+Friday,9,August,14:00,,**Bring Your Own Data**,,,[Neil Lawrence](http://inverseprobability.com) and [Ricardo Andrade Pacheco](http://ric70x7.github.io), University of Sheffield,

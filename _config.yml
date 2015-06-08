@@ -20,6 +20,8 @@ conference:
   organizers:
   - {name: Neil Lawrence, url: "http://inverseprobability.com"}
   - {name: Ricardo Andrade Pacheco, url: "http://ric70x7.github.io"}
+  - {name: John Quinn, url: "http://cit.mak.ac.ug/staff/jquinn/"}
+  - {name: Martin Mubangizi, url: "http://cit.mak.ac.ug/cs/aigroup/mmubangizi/"}
   
   name: Gaussian Process School, Uganda
   location: University of Makerere, Kampala, Uganda
