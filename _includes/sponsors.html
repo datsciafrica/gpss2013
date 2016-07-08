@@ -1,26 +1,32 @@
 <div id="sponsors" class="about" style="background-color: #fff; text-align: center; ">
   <div class="container-fluid">
-    
+    {% if site.conference.organizers %}
+    {% assign organizers = site.conference.organizers %}
+    {% else %}
+    {% assign organizers = site.school.organizers %}
+    {% endif %}
+    {% if organizers %}
     <h2 class="section-title" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;">Collaborators
       <svg class="icon icon-chain"><use xlink:href="#icon-chain"></use></svg>
     </h2>
     <div class="row">
       {% for organizer in site.conference.organizers %}
-      
+      {% if organizer.logo %}
       <div class="col-sm-6 col-md-3">
 	{% if forloop.first %}    <div class="icon-box" style="position: relative; min-height: 80px;">{% else %}    <div class="icon-box">{% endif %}
           <img {% if forloop.first %}class="v-align" style=""{% endif %}src="{{ site.baseurl }}/img/{{ organizer.logo }}">
         </div>
-      </div>
+	</div>
+	{% endif %}
       {% endfor %}
-    </div>
+      </div>
+      {% endif %}
   <h2 style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;">Sponsorship</h2>
   {% if site.conference.sponsors %}
     <p>Sponsoring {{ site.title }} {{ site.year }} Event is a great way to communicate your commitment to support the achievement of the sustainable development goals. We thank this year's sponsors:</p> 
   <div class="row">
     <div style ="margin:0 auto">
       {% for sponsor in site.conference.sponsors %}
-      
       <div class="col-sm-6 col-md-3">
 	{% if forloop.first %}    <div class="icon-box" style="position: relative; min-height: 80px;">{% else %}    <div class="icon-box">{% endif %}
             <img {% if forloop.first %}class="v-align" style=""{% endif %}src="{{ site.baseurl }}/img/{{ sponsor.logo }}">

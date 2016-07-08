@@ -18,9 +18,9 @@ school:
   - {name: John Quinn, url: "http://cit.mak.ac.ug/staff/jquinn/"}
   - {name: Martin Mubangizi, url: "http://cit.mak.ac.ug/cs/aigroup/mmubangizi/"}
   organizers:
-  - {name: Neil Lawrence, url: "http://inverseprobability.com"}
+  - {name: Neil Lawrence, url: "http://inverseprobability.com", logo: sheffield.png}
   - {name: Ricardo Andrade Pacheco, url: "http://ric70x7.github.io"}
-  - {name: John Quinn, url: "http://cit.mak.ac.ug/staff/jquinn/"}
+  - {name: John Quinn, url: "http://cit.mak.ac.ug/staff/jquinn/", logo: makerere.png}
   - {name: Martin Mubangizi, url: "http://cit.mak.ac.ug/cs/aigroup/mmubangizi/"}
   
   name: Gaussian Process School, Uganda
