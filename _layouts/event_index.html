@@ -46,9 +46,12 @@ layout: default
     </div>
   </div>
 </div>
-
+{% if site.school %}
 {% include school.html %}
+{% endif %}
+{% if site.conference %}
 {% include workshop.html %}
+{% endif %}
 {% include social.html %}
 {% include sponsors.html %}
 

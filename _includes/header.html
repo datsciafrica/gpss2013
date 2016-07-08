@@ -16,8 +16,12 @@
         <div class="collapse navbar-collapse scrollspy" id="bs-example-navbar-collapse-1">
             <ul class="nav navbar-nav navbar-right">
                 <li><a class="scroll" href="/">HOME</a></li>
-                <li><a class="scroll" href="#summer_school">SUMMER SCHOOL</a></li>
+		{% if site.school %}
+                <li><a class="scroll" href="#summer_school">SCHOOL</a></li>
+		{% endif %}
+		{% if site.conference %}
                 <li><a class="scroll" href="#workshop">WORKSHOP</a></li>
+		{% endif %}
                 <li><a class="scroll" href="#sponsors">COLLABORATORS &amp; SPONSORSHIP</a></li>
                 <!-- <li><a class="scroll" href="#testimonials">TRAVEL</a></li> -->
 		{% if site.social.text %}

@@ -24,7 +24,11 @@ layout: default
   </div>
 </div>
 
+{% if site.school %}
 {% include school_video.html %}
+{% endif %}
+{% if site.conference %}
 {% include workshop_video.html %}
+{% endif %}
 {% include sponsors.html %}
 
