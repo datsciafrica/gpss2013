@@ -5,12 +5,12 @@
     {% else %}
     {% assign organizers = site.school.organizers %}
     {% endif %}
-    {% if site.school.organizers %}
+    {% if organizers %}
     <h2 class="section-title" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;">Collaborators
       <svg class="icon icon-chain"><use xlink:href="#icon-chain"></use></svg>
     </h2>
     <div class="row">
-      {% for organizer in site.conference.organizers %}
+      {% for organizer in organizers %}
       {% if organizer.logo %}
       <div class="col-sm-6 col-md-3">
 	{% if forloop.first %}    <div class="icon-box" style="position: relative; min-height: 80px;">{% else %}    <div class="icon-box">{% endif %}
