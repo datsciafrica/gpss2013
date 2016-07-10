@@ -1,6 +1,7 @@
 # Site settings
-title: Gaussian Process School Uganda
+title: Gaussian Process School
 year: 2013
+location: Kampala, Uganda
 banner: Kampala_26.08.2009_13-00-45.jpg
 email: info@datascienceafrica.org
 description: > # this means to ignore newlines until "baseurl:"
